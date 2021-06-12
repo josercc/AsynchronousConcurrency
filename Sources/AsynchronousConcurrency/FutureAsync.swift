@@ -32,15 +32,18 @@ public struct FutureAsync<V> {
     /// 执行成功回掉
     /// - Parameter then: 无返回值成功的回掉
     /// - Returns: FutureAsync<V>
+    @discardableResult
     public func then(_ then:@escaping () -> Void) -> FutureAsync<V> {
         var future = self
         future.then = then
         return future
     }
     
+    
     /// 捕获异常的回掉
     /// - Parameter `catch`: 异常捕获的回掉
     /// - Returns: FutureAsync<V>
+    @discardableResult
     public func `catch`(_ `catch`:@escaping (FutureError) -> Void) -> FutureAsync<V> {
         var future = self
         future.catch = `catch`
@@ -71,4 +74,9 @@ public struct FutureAsync<V> {
             
         }
     }
+}
+
+@discardableResult
+public func `async`<V>(_ handle:@escaping FutureAsync<V>.Handle) -> FutureAsync<V> {
+    return FutureAsync<V>(handle)
 }

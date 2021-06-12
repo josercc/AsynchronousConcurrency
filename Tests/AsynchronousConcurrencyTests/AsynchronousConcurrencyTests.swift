@@ -3,6 +3,7 @@
     @testable import AsynchronousConcurrency
 
     final class AsynchronousConcurrencyTests: XCTestCase {
+        
         func testExample() {
             // This is an example of a functional test case.
             // Use XCTAssert and related functions to verify your tests produce the correct
@@ -16,6 +17,13 @@
             
             print("end1")
             
-            
+            async {
+                return FutureAsyncValue<Void>.void
+            }.then {
+                
+            }.catch { error in
+                
+            }.await()
         }
+        
     }
