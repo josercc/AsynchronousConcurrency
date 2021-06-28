@@ -76,7 +76,3 @@ public struct FutureAsync<V> {
     }
 }
 
-@discardableResult
-public func `async`<V>(_ handle:@escaping FutureAsync<V>.Handle) -> FutureAsync<V> {
-    return FutureAsync<V>(handle)
-}

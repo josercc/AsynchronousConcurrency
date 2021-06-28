@@ -10,7 +10,7 @@ import Foundation
 /// 异步值存放结构体
 public struct Future<V>: FutureAwait {
     /// 设置异步值返回值的回掉
-    public typealias Handle = (V) -> Void
+    public typealias Handle = (V?) -> Void
     /// 存放异步获取的值
     private var value:FutureValue<V>
     /// 信号量 用于等待函数值阻断
@@ -61,5 +61,44 @@ public struct Future<V>: FutureAwait {
     }
 }
 
+/// 扩展
+public extension Future {
+    /// 将一个未来值转换成另外未来值类型`V->T`
+    /// - Returns: 另外的未来值类型
+    func map<T>(_ handle:@escaping (V) -> T?) -> Future<T> {
+        return Future<T> { fHandle in
+            self._await {
+                guard let fValue = try? self.get() else {
+                    fHandle(nil)
+                    return
+                }
+                guard let value = handle(fValue) else {
+                    fHandle(nil)
+                    return
+                }
+                fHandle(value)
+            }
+        }
+    }
+    
+    /// 将一个未来值转换为另外的未来值`V->Future<T>`
+    /// - Returns: 另外的未来值类型
+    func flatMap<T>(_ handle:@escaping(V) -> Future<T>) -> Future<T> {
+        return Future<T> { fHandle in
+            self._await {
+                guard let fValue = try? self.get() else {
+                    return fHandle(nil)
+                }
+                let future = handle(fValue)
+                future._await {
+                    guard let fValue = try? future.get() else {
+                        return fHandle(nil)
+                    }
+                    fHandle(fValue)
+                }
+            }
+        }
+    }
+}
 
 

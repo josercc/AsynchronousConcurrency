@@ -9,7 +9,27 @@
             // Use XCTAssert and related functions to verify your tests produce the correct
             // results.
             
-
+            let future = self.makeFuture(number: 2).map { number -> Int? in
+                guard let num = Int(number) else {
+                    return nil
+                }
+                return num + 1
+            }.flatMap { num in
+                return self.makeFuture(number: num + 1)
+            }
+            guard let value = try? future.await() else {
+                return
+            }
+            print(value)
         }
+        
+        func makeFuture(number:Int) -> Future<String> {
+            return .init { handle in
+                sleep(UInt32(number))
+                handle("\(number)")
+            }
+        }
+        
+        
         
     }
