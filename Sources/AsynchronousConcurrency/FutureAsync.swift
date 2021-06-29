@@ -16,6 +16,7 @@ public struct FutureAsync<V> {
     var `catch`:((FutureError) -> Void)?
     /// 初始化一个异步未来值
     /// - Parameter handle: 获取未来值的逻辑回掉 在子线程处理任务
+    @discardableResult
     public init(_ handle:@escaping Handle) {
         self.handle = handle
     }
