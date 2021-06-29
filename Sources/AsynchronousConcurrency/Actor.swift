@@ -13,18 +13,19 @@ public struct Actor<V> {
     let semaphore:DispatchSemaphore
     public init(_ value:V? = nil) {
         self.value = ActorValue<V>(value)
-        self.semaphore = DispatchSemaphore(value: 0)
+        self.semaphore = DispatchSemaphore(value: 1)
     }
     public var wrappedValue:V? {
         get {
-            return self.value.value
+            let _ = self.semaphore.wait(wallTimeout: .distantFuture)
+            let value = self.value.value
+            self.semaphore.signal()
+            return value
         }
         nonmutating set {
-            DispatchQueue.await.async {
-                self.value.value = newValue
-                self.semaphore.signal()
-            }
             let _ = self.semaphore.wait(wallTimeout: .distantFuture)
+            self.value.value = newValue
+            self.semaphore.signal()
         }
     }
 }

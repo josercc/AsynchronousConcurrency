@@ -8,15 +8,14 @@
 import Foundation
 
 /// 创建一个异步未来值
-public struct FutureAsync<V> {
+public struct Async<V> {
     public typealias Handle = () throws -> FutureAsyncValue<V>
     let handle:Handle
     var thenValue:((V) -> Void)?
     var then:(() -> Void)?
-    var `catch`:((FutureError) -> Void)?
+    var `catch`:((Error) -> Void)?
     /// 初始化一个异步未来值
     /// - Parameter handle: 获取未来值的逻辑回掉 在子线程处理任务
-    @discardableResult
     public init(_ handle:@escaping Handle) {
         self.handle = handle
     }
@@ -24,7 +23,7 @@ public struct FutureAsync<V> {
     /// 执行成功的回掉
     /// - Parameter thenValue: 有返回值成功的回掉
     /// - Returns: FutureAsync<V>
-    public func then(_ thenValue:@escaping (V) -> Void) -> FutureAsync<V> {
+    public func then(_ thenValue:@escaping (V) -> Void) -> Async<V> {
         var future = self
         future.thenValue = thenValue
         return future
@@ -33,8 +32,7 @@ public struct FutureAsync<V> {
     /// 执行成功回掉
     /// - Parameter then: 无返回值成功的回掉
     /// - Returns: FutureAsync<V>
-    @discardableResult
-    public func then(_ then:@escaping () -> Void) -> FutureAsync<V> {
+    public func then(_ then:@escaping () -> Void) -> Async<V> {
         var future = self
         future.then = then
         return future
@@ -44,8 +42,7 @@ public struct FutureAsync<V> {
     /// 捕获异常的回掉
     /// - Parameter `catch`: 异常捕获的回掉
     /// - Returns: FutureAsync<V>
-    @discardableResult
-    public func `catch`(_ `catch`:@escaping (FutureError) -> Void) -> FutureAsync<V> {
+    public func `catch`(_ `catch`:@escaping (Error) -> Void) -> Async<V> {
         var future = self
         future.catch = `catch`
         return future
@@ -65,14 +62,10 @@ public struct FutureAsync<V> {
                     }
                 }
             } catch(let error) {
-                guard let error = error as? FutureError else {
-                    return
-                }
                 DispatchQueue.main.async {
                     self.catch?(error)
                 }
             }
-            
         }
     }
 }

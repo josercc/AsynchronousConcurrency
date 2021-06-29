@@ -19,20 +19,21 @@ public struct GlobalActor<V> {
     }
     public var wrappedValue:V? {
         get {
-            return self.value.values[self.key] as? V
+            let _ = self.value.semaphore.wait(wallTimeout: .distantFuture)
+            let v = self.value.values[self.key] as? V
+            self.value.semaphore.signal()
+            return v
         }
         nonmutating set {
-            DispatchQueue.await.async {
-                self.value.values[self.key] = newValue
-                self.value.semaphore.signal()
-            }
             let _ = self.value.semaphore.wait(wallTimeout: .distantFuture)
+            self.value.values[self.key] = newValue
+            self.value.semaphore.signal()
         }
     }
 }
 
 fileprivate class GlobalActionValue {
     fileprivate var values:[String:Any] = [:]
-    fileprivate let semaphore:DispatchSemaphore = DispatchSemaphore(value: 0)
+    fileprivate let semaphore:DispatchSemaphore = DispatchSemaphore(value: 1)
     fileprivate static let `default` = GlobalActionValue()
 }
