@@ -31,6 +31,7 @@ public class FutureList {
     
     /// 等待全部完成
     public func `await`() {
+        assert(self.futures.count > 0, "FutureList count must be > 0")
         self.futures.forEach { element in
             element._await {
                 self.awaitCount -= 1

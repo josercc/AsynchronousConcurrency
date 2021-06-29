@@ -63,9 +63,11 @@ public struct Future<V>: FutureAwait {
 
 /// 扩展
 public extension Future {
+    typealias MapHandle<T> = (V) -> T?
+    typealias FlatMapHandle<T> = (V) -> Future<T>
     /// 将一个未来值转换成另外未来值类型`V->T`
     /// - Returns: 另外的未来值类型
-    func map<T>(_ handle:@escaping (V) -> T?) -> Future<T> {
+    func map<T>(_ handle:@escaping MapHandle<T>) -> Future<T> {
         return Future<T> { fHandle in
             self._await {
                 guard let fValue = try? self.get() else {
@@ -83,7 +85,7 @@ public extension Future {
     
     /// 将一个未来值转换为另外的未来值`V->Future<T>`
     /// - Returns: 另外的未来值类型
-    func flatMap<T>(_ handle:@escaping(V) -> Future<T>) -> Future<T> {
+    func flatMap<T>(_ handle:@escaping FlatMapHandle<T>) -> Future<T> {
         return Future<T> { fHandle in
             self._await {
                 guard let fValue = try? self.get() else {

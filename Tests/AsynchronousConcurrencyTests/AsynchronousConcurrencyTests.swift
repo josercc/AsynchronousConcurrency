@@ -9,7 +9,7 @@
             // Use XCTAssert and related functions to verify your tests produce the correct
             // results.
             
-            let future = self.makeFuture(number: 2).map { number -> Int? in
+            let future = self.makeFuture(number: 2).map { number in
                 guard let num = Int(number) else {
                     return nil
                 }
