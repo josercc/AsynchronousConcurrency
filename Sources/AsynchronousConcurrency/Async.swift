@@ -7,6 +7,9 @@
 
 import Foundation
 
+
+public typealias FutureAsync = Async
+
 /// 创建一个异步未来值
 public struct Async<V> {
     public typealias Handle = () throws -> FutureAsyncValue<V>

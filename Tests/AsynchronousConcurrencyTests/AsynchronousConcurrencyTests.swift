@@ -22,22 +22,7 @@
 //                return
 //            }
 //            print(value)
-            let queue = DispatchQueue(label: "test", attributes: .concurrent)
-            for i in 0 ..< 1000 {
-                queue.async {
-                    print("\(i) \(self.age)")
-                    self.age = i
-                }
-            }
-            let group = DispatchGroup()
-            group.enter()
-        }
-        
-        func makeFuture(number:Int) -> Future<String> {
-            return .init { handle in
-                sleep(UInt32(number))
-                handle("\(number)")
-            }
+
         }
         
         
