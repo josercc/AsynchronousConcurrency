@@ -11,6 +11,8 @@ import Foundation
 public enum FutureError: Error {
     /// 未来值还没有加载完毕
     case futureNotReadly
+    /// 系统错误
+    case systemError
     /// 自定义其他错误类型
     case custom(String)
     
@@ -18,6 +20,8 @@ public enum FutureError: Error {
         switch self {
         case .futureNotReadly:
             return "Future data is not ready, please use await synchronization to use"
+        case .systemError:
+            return "Ststem Error"
         case .custom(let message):
             return message
         }
