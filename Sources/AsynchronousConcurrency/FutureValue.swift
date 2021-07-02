@@ -8,7 +8,12 @@
 import Foundation
 
 class FutureValue<V> {
-    var value:V?
+    private(set) var isReadlySet:Bool = false
+    var value:V? {
+        didSet {
+            self.isReadlySet = true
+        }
+    }
     init() {
         self.value = nil
     }

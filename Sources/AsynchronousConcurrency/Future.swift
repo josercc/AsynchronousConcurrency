@@ -28,8 +28,11 @@ public struct Future<V>: FutureAwait {
     /// 获取当钱异步的值 如果当前结构体还没有执行等待函数 则会抛异常
     /// - Returns: 对应的值
     public func get() throws -> V {
+        guard self.value.isReadlySet else {
+            assertionFailure()
+            throw FutureError.futureNotReadly
+        }
         guard let value = self.value.value else {
-            assertionFailure(FutureError.futureNotReadly.message)
             throw FutureError.futureNotReadly
         }
         return value
@@ -40,8 +43,8 @@ public struct Future<V>: FutureAwait {
     /// - Returns: 返回对应异步的值
     public func `await`(_ success: (() -> Void)? = nil) throws -> V {
         _await {
-            self.semaphore.signal()
             success?()
+            self.semaphore.signal()
         }
         let _ = self.semaphore.wait(wallTimeout: .distantFuture)
         let value = try self.get()
