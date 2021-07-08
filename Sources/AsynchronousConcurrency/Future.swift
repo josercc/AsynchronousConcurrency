@@ -37,13 +37,13 @@ public struct Future<V>: FutureAwait {
         }
         return value
     }
-    
+        
     /// 执行等待函数获取异步值
     /// - Parameter success: 执行等待完毕的回掉 默认为nil
     /// - Returns: 返回对应异步的值
-    public func `await`(_ success: (() -> Void)? = nil) throws -> V {
-        _await {
-            success?()
+    public func `await`(_ success:FutureAwaitCompletion? = nil) throws -> V {
+        _await { value in
+            success?(value)
             self.semaphore.signal()
         }
         let _ = self.semaphore.wait(wallTimeout: .distantFuture)
@@ -53,11 +53,11 @@ public struct Future<V>: FutureAwait {
     
     /// 执行等待函数
     /// - Parameter success: 执行等待完毕的回掉 默认为nil
-    public func _await(_ success:(() -> Void)? = nil) {
+    public func _await(_ success:FutureAwaitCompletion? = nil) {
         DispatchQueue.await.async {
             let handle:Handle = { value in
                 self.value.value = value
-                success?()
+                success?(self)
             }
             self.make(handle)
         }
@@ -72,7 +72,7 @@ public extension Future {
     /// - Returns: 另外的未来值类型
     func map<T>(_ handle:@escaping MapHandle<T>) -> Future<T> {
         return Future<T> { fHandle in
-            self._await {
+            self._await { _ in
                 guard let fValue = try? self.get() else {
                     fHandle(nil)
                     return
@@ -90,12 +90,12 @@ public extension Future {
     /// - Returns: 另外的未来值类型
     func flatMap<T>(_ handle:@escaping FlatMapHandle<T>) -> Future<T> {
         return Future<T> { fHandle in
-            self._await {
+            self._await { _ in
                 guard let fValue = try? self.get() else {
                     return fHandle(nil)
                 }
                 let future = handle(fValue)
-                future._await {
+                future._await { _ in
                     guard let fValue = try? future.get() else {
                         return fHandle(nil)
                     }

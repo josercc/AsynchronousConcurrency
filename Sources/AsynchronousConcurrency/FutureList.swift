@@ -29,11 +29,14 @@ public class FutureList {
         self.semaphore = DispatchSemaphore(value: 0)
     }
     
+    /// 某个异步执行完毕的回掉
+    public typealias FutureAwaitCompletion = (FutureAwait) -> Void
     /// 等待全部完成
-    public func `await`() {
+    public func `await`(completion:FutureAwaitCompletion? = nil) {
         assert(self.futures.count > 0, "FutureList count must be > 0")
         self.futures.forEach { element in
-            element._await {
+            element._await { value in
+                completion?(value)
                 self.awaitCount -= 1
             }
         }
