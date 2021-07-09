@@ -32,14 +32,20 @@ public class FutureList {
     /// 某个异步执行完毕的回掉
     public typealias FutureAwaitCompletion = (FutureAwait) -> Void
     /// 等待全部完成
-    public func `await`(completion:FutureAwaitCompletion? = nil) {
+    public func `await`() throws -> Void {
         assert(self.futures.count > 0, "FutureList count must be > 0")
+        var awaitError:Error?
         self.futures.forEach { element in
             element._await { value in
-                completion?(value)
                 self.awaitCount -= 1
+            } failure: { error in
+                awaitError = error
+                self.awaitCount = 0
             }
         }
         let _ = self.semaphore.wait(wallTimeout: .distantFuture)
+        if let error = awaitError {
+            throw error
+        }
     }
 }

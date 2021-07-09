@@ -52,11 +52,11 @@ public struct Async<V> {
     }
     
     /// 执行等待完成任务
-    public func `await`() {
+    public func `await`(queue:DispatchQueue = DispatchQueue.main) {
         DispatchQueue.async.async {
             do {
                 let value = try self.handle()
-                DispatchQueue.main.async {
+                queue.async {
                     switch value {
                     case .value(let v):
                         self.thenValue?(v)
@@ -65,7 +65,7 @@ public struct Async<V> {
                     }
                 }
             } catch(let error) {
-                DispatchQueue.main.async {
+                queue.async {
                     self.catch?(error)
                 }
             }

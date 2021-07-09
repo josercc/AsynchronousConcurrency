@@ -6,25 +6,39 @@
         @Actor(2)
         var age:Int?
         func testExample() {
-            // This is an example of a functional test case.
-            // Use XCTAssert and related functions to verify your tests produce the correct
-            // results.
-            
-//            let future = self.makeFuture(number: 2).map { number in
-//                guard let num = Int(number) else {
-//                    return nil
-//                }
-//                return num + 1
-//            }.flatMap { num in
-//                return self.makeFuture(number: num + 1)
-//            }
-//            guard let value = try? future.await() else {
-//                return
-//            }
-//            print(value)
 
+            Async<Void> {
+                let future:Future<Int> = .init { handle in
+                    handle(2)
+                }.map { _ in
+                    return 3
+                }.flatMap { _ in
+                    throw FutureError.systemError
+                }
+                try FutureList([self.fututr2()]).await()
+                return .void
+            }.then {
+                print("then")
+            }.catch { e in
+                print("catch \(e)")
+            }.await(queue: .global())
+            
+            let group = DispatchGroup()
+            group.enter()
+            group.wait(wallTimeout: .distantFuture)
+            
         }
         
+        func future1() -> Future<Int> {
+            return .init { handle in
+                throw FutureError.systemError
+            }
+        }
         
+        func fututr2() -> Future<String> {
+            return .init { handle in
+                throw FutureError.custom("custom error")
+            }
+        }
         
     }
