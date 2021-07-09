@@ -8,8 +8,8 @@
         func testExample() {
 
             Async<Void> {
-                let future:Future<Int> = .init { handle in
-                    handle(2)
+                let future:Future<Int> = .init { success, failure in
+                    success(2)
                 }.map { _ in
                     return 3
                 }.flatMap { _ in
@@ -30,14 +30,16 @@
         }
         
         func future1() -> Future<Int> {
-            return .init { handle in
+            return .init { success, failure in
                 throw FutureError.systemError
             }
         }
         
         func fututr2() -> Future<String> {
-            return .init { handle in
-                throw FutureError.custom("custom error")
+            return .init { success, failure in
+                DispatchQueue.global().asyncAfter(deadline: .now() + 2) {
+                    failure(FutureError.futureNotReadly)
+                }
             }
         }
         

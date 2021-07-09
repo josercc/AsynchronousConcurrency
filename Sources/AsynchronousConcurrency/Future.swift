@@ -10,8 +10,9 @@ import Foundation
 /// 异步值存放结构体
 public struct Future<V>: FutureAwait {
     /// 设置异步值返回值的回掉
-    public typealias Handle = (V) -> Void
-    public typealias MakeHandle = (@escaping Handle) throws -> Void
+    public typealias SuccessHandle = (V) -> Void
+    public typealias FailureHandle = (Error) -> Void
+    public typealias MakeHandle = (@escaping SuccessHandle, @escaping FailureHandle) throws -> Void
     /// 存放异步获取的值
     private var value:FutureValue<V>
     /// 信号量 用于等待函数值阻断
@@ -61,12 +62,13 @@ public struct Future<V>: FutureAwait {
     /// - Parameter success: 执行等待完毕的回掉 默认为nil
     public func _await(success:@escaping (FutureAwait) -> Void, failure:@escaping (Error) -> Void) {
         DispatchQueue.await.async {
-            let handle:Handle = { value in
-                self.value.value = value
-                success(self)
-            }
             do {
-                try self.make(handle)
+                try self.make({ value in
+                    self.value.value = value
+                    success(self)
+                }, { error in
+                    failure(error)
+                })
             } catch (let e) {
                 failure(e)
             }
@@ -81,21 +83,21 @@ public extension Future {
     /// 将一个未来值转换成另外未来值类型`V->T`
     /// - Returns: 另外的未来值类型
     func map<T>(_ handle:@escaping MapHandle<T>) -> Future<T> {
-        return Future<T> { fHandle in
+        return .init { success, failure in
             let fValue = try self.await()
             let value = try handle(fValue)
-            fHandle(value)
+            success(value)
         }
     }
     
     /// 将一个未来值转换为另外的未来值`V->Future<T>`
     /// - Returns: 另外的未来值类型
     func flatMap<T>(_ handle:@escaping FlatMapHandle<T>) -> Future<T> {
-        return Future<T> { fHandle in
+        return Future<T> { success, failure in
             let fValue = try self.await()
             let future = try handle(fValue)
             let value = try future.await()
-            fHandle(value)
+            success(value)
         }
     }
 }
