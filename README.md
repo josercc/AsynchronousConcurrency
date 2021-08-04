@@ -4,34 +4,67 @@ Swift5.5新出的异步并发是一个很好的功能，但是只能在iOS15等�
 为了尝试提前用上异步并发，也参考了`AwaitKit`这个库，觉得可能不支持异步并发，还有线程死锁的问题。就索性自己
 写一个简单的库，这样自己用起来自己改动十分的容易
 
-目前只是做了一下简单的测试但是并不保证功能按照理想中进行，毕竟还没到发布0.1.0版本。
+目前最新的版本已经在我们项目线上用到，从目前来说还是十分稳定的。
+
+⚠️当循环执行`Async`方法时候，会存在问题。
+
+为了演示这个库在项目的用法，下面是一些例子。
+
+## 项目例子
+
+上传徒步的图片资源
+
+```swift
+/// 进行上传
+func upload() -> Async<Void> {
+    return .init {[weak self] in
+        guard let self = self else {
+            return .void
+        }
+        for uploadAsset in self.waitingUploadAssets {
+            let path = try uploadAsset.future.await()
+            self.uploadedAssets.append(.init(uuid: uploadAsset.uuid, path: path))
+        }
+        return .void
+    }
+}
+```
+
+
 
 ## 我们设置代码为线程同步
 
 ```swift
-FutureAsync<Int> {
-    let future1 = Future<Int> { handle in
+Async<Int> {
+    /// 你必须解决`Self`循环
+    let value1 = try self.future1().await()
+    let value2 = try self.future2().await()
+    print("future1 value \(value1)")
+    print("future2 value \(value2)")
+    return FutureAsyncValue.void
+}.await()
+
+func future1() -> Future<Int> {
+    return .init{ success, failure in
         print("future1 \(Thread.current)")
         let start = Date().timeIntervalSince1970
         DispatchQueue.global().asyncAfter(deadline: .now() + 3) {
             print("future1 \(Date().timeIntervalSince1970 - start)")
-            handle(1)
+            success(1)
         }
     }
-    let future2 = Future<Int> { handle in
+}
+
+func future2() -> Future<Int> {
+    return .init { success, failure in
         print("future2 \(Thread.current)")
         let start = Date().timeIntervalSince1970
         DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
             print("future2 \(Date().timeIntervalSince1970 - start)")
-            handle(2)
+            success(2)
         }
     }
-    if let value1 = try? future1.await(), let value2 = try? future2.await()  {
-        print("future1 value \(value1)")
-        print("future2 value \(value2)")
-    }
-    return FutureAsyncValue.void
-}.await()
+}
 ```
 打印结果如下
 
@@ -49,30 +82,15 @@ future2 value 2
 ## 我们创建一个异步并发执行
 
 ```swift
-FutureAsync<Int> {
-    let future1 = Future<Int> { handle in
-        print("future1 \(Thread.current)")
-        let start = Date().timeIntervalSince1970
-        DispatchQueue.global().asyncAfter(deadline: .now() + 3) {
-            print("future1 \(Date().timeIntervalSince1970 - start)")
-            handle(1)
-        }
-    }
-    let future2 = Future<Int> { handle in
-        print("future2 \(Thread.current)")
-        let start = Date().timeIntervalSince1970
-        DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
-            print("future2 \(Date().timeIntervalSince1970 - start)")
-            handle(2)
-        }
-    }
-    let start = Date().timeIntervalSince1970
-    FutureList([future1,future2]).await()
-    if let value1 = try? future1.get(), let value2 = try? future2.get()  {
-        print("total \(Date().timeIntervalSince1970 - start)")
-        print("future1 value \(value1)")
-        print("future2 value \(value2)")
-    }
+Async<Int> {
+    /// 你必须解决`Self`循环
+    let future1 = self.future1()
+    let future2 = self.future2()
+    try FutureList([future1,future2]).await()
+    let value1 = try future1.await()
+    let value2 = try future2.await()
+    print("future1 value \(value1)")
+    print("future2 value \(value2)")
     return FutureAsyncValue.void
 }.await()
 ```
@@ -91,9 +109,9 @@ future2 value 2
 
 ## 怎么将网络请求转换为异步任务呢？
 ```swift
-let future = Future<Data> { handle in
+let future = Future<Data> { success, failure in
     AF.request("https://httpbin.org/get").response { response in
-        handle(response.data)
+        success(response.data)
     }
 }
 ```
@@ -123,17 +141,24 @@ processImageData1 { image in
 
 ```swift
 FutureAsync<UIImage> {
-    let dataResource = try! loadWebResource("dataprofile.txt")
-    let imageResource = try! loadWebResource("imagedata.dat")
+    let dataResource = try loadWebResource("dataprofile.txt")
+    let imageResource = try loadWebResource("imagedata.dat")
     /// 并发
     FutureList([dataResource,imageResource]).await()
-    let imageTmp = decodeImage(try! dataResource.get(), try! imageResource.get())
+    let imageTmp = decodeImage(try dataResource.get(), try imageResource.get())
     let imageResult = dewarpAndCleanupImage(imageTmp)
     return .value(imageResult)
     
 }.then { image in
     display(image)
+}.catch {error in
+  if let error = error as? futuerError {
+    print(error.message)
+  } else {
+    print(error.localizedDescription)
+  }
 }
 ```
 
 现在就是这么简单
+
